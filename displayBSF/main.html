@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      .container{
+        display:flex;
+        width:100%;
+        gap:10px;
+        justify-content: space-around;
+        align-items:center;
+        flex-wrap: wrap;
+      }
+
+
+    .card {
+      width: 300px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card h2 {
+      margin-top: 0;
+    }
+    
+    .card p {
+      margin-bottom: 0;
+    }
+    
+    .card .avatar {
+      border:2px solid black;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      overflow: hidden;
+      margin-right: 10px;
+    }
+    
+    .card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .basic-info{
+      display:flex;
+      flex-direction:column;
+      justify-items:center;
+    }
+
+    .basic-info h2,
+    .basic-info p{
+      padding:0px;
+      margin:0px;
+    }
+    
+    .card .details {
+      display: flex;
+      align-items: center;
+    }
+
+    
+    
+</style>
+  </head>
+  <body>
+      <div id="app"></div>
+    
+
+
+      <script>
+        let elems = {}
+        document.addEventListener("DOMContentLoaded",pageLoad)
+
+        function pageLoad(){
+          elems.app = document.getElementById('app');
+          loadData();
+        }
+
+
+        function loadData(){
+          let htmlTEmp = ''
+          google.script.run
+          .withSuccessHandler((res)=>{
+            res.map((data)=>{
+              
+              htmlTEmp+=`
+              <div class="card">
+                <div class="details">
+                  <div class="avatar">
+                    <img src="${data?.image ? data?.image : 'https://via.placeholder.com/60'}" alt="Avatar">
+                  </div>
+                  <div class="basic-info">
+                    <h2 style="text-transform:capitalize;">${data?.Name}</h2>
+                    <p>${data?.Position?.toUpperCase()}</p>
+                  </div>
+                </div>
+                <p style="margin-top:15px;">Birthday: ${data?.Birthday ? formatDate(data?.Birthday ): "N/A"}</p>
+                <p >Gender: ${data?.Gender ? data?.Gender : "N/A"}</p>
+                <p >Education: ${data?.Education ? data?.Education : "N/A"}</p>
+                <p >Accomplishment: ${data?.Accomplishment ? data.Accomplishment : "N/A"}</p>
+              </div>`
+              
+            })
+            elems.app.innerHTML+=`
+                <div class="container">${htmlTEmp}</div>
+              `
+          })
+          .withFailureHandler((err)=>{
+
+          })
+          .getPersonnel();
+        }
+
+        function formatDate(inputDate) {
+              const parts = inputDate.split("-");
+
+              const date = new Date(`${parts[2]}-${parts[0]}-${parts[1]}`);
+
+              // Array of month names
+              const monthNames = [
+                  "January", "February", "March",
+                  "April", "May", "June", "July",
+                  "August", "September", "October",
+                  "November", "December"
+              ];
+
+              const monthName = monthNames[date.getMonth()];
+
+              const day = date.getDate();
+              const year = date.getFullYear();
+
+              const formattedDate = `${monthName} ${day} ${year}`;
+
+              return formattedDate;
+          }
+      </script>
+  </body>
+</html>
