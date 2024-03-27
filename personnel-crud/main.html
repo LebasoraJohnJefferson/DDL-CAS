@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://unpkg.com/tabulator-tables@6.1.0/dist/css/tabulator.min.css" rel="stylesheet">
+    <style>
+      .search-bar-outter{
+        margin-bottom:.1rem;
+       
+      }
+
+      .search-bar-inner{
+        background-color:#f0f0f0;
+         padding:5px 10px;
+        display:flex;
+        
+        justify-content: space-between;
+        align-items:center;
+      }
+
+      .search-wrapper input{
+        padding:6px 3px;
+        border:none;
+        outline:none;
+      }
+
+      .search-wrapper label{
+        margin-right:10px;
+      }
+    </style>
+</head>
+<body>
+    <div class="search-bar-outter">
+      <div class="search-bar-inner">
+        <div class="search-wrapper">
+          <label>Search</label>
+          <input type="text"/ id="search" placeholder="Search name...">
+        </div>
+        <button id="add-record">Add Record</button>
+      </div>
+    </div>
+
+
+
+    <div id="data-table"></div>
+    <div id="notification"></div>
+    <div id="sample"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.4.4/luxon.min.js" integrity="sha512-dUlSLLkxslGILhPdCkALwk4szPhp3xmZIKFtlUD+O9Lslq41Aksmdt5OGqpomDoT4FsCUH70jQU8ezZHI3v1RQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script  type="text/javascript" src="https://unpkg.com/tabulator-tables@6.1.0/dist/js/tabulator.min.js"></script>
+    <script>
+        let elems = {}
+        document.addEventListener("DOMContentLoaded",pageLoad)
+
+        function pageLoad(){
+          elems.alerts = document.getElementById('notification');
+          elems.search = document.getElementById('search');
+          elems.addRecord = document.getElementById('add-record');
+           
+          elems.search.addEventListener("input",searchData)
+          elems.addRecord.addEventListener("click",addData)
+          loadData();
+        }
+
+        function loadData(){
+         
+
+          google.script.run
+          .withSuccessHandler((res)=>{
+            const data = res?.data.map((info)=>{
+              return {...info,"Delete":"Delete"}
+            })
+            renderTable(data,res?.headers);
+          })
+          .withFailureHandler((err)=>{
+
+          })
+          .getData();
+        }
+
+       
+        const renderTable=(data,headers)=>{
+          
+            elems.table = new Tabulator("#data-table", {
+            layout:"fitColumns",
+            pagination:true,
+            paginationSize:20,
+            data:data,
+            columns:[
+              {title:headers[0],field:headers[0]},
+              {title:headers[1],field:headers[1],editor:'input'},
+              {title:headers[2],field:headers[2],  editor:"list", editorParams:{values:{"Male":"Male", "Female":"Female"}}},
+              {title:headers[3],field:headers[3], editor:'input'},
+              {title:headers[4],field:headers[4],hozAlign:"center",sorter:"date", sorterParams:{
+                format:"MM-dd-yyyy",
+                alignEmptyValues:"top"
+              },
+                editor:"date", editorParams:{
+                  format:"MM-dd-yyyy", 
+                  verticalNavigation:"table"
+              }
+              },
+              {title:headers[5],field:headers[5],editor:'input'},
+              {title:headers[6],field:headers[6],editor:'input'},
+              {title:headers[7],field:headers[7],editor:'input'},
+              { title: "Action", field:"Delete" }
+            ]
+        });
+
+        elems.table.on("cellClick", function(e, cell){
+          if(cell?._cell?.value==="Delete"){
+            const confirmation = confirm("Are you sure you want to delete this data?");
+            if(!confirmation) return
+            elems.alerts.textContent = "Processing..";
+            google.script.run
+            .withSuccessHandler((res)=>{
+              loadData()
+              elems.alerts.textContent = "Successfully Deleted..";
+              clearAlert(elems.alerts)
+            })
+            .withFailureHandler((err)=>{
+              elems.alerts.textContent = "Error while processing..";
+              clearAlert(elems.alerts)
+            })
+            .deleteRecord({
+              id:cell?._cell?.row?.data?.Id
+            })
+          }
+        });
+
+        
+
+        elems.table.on("cellEdited",(cell)=>{
+          const id = cell?._cell?.row?.data?.Id;
+          const value=cell?._cell?.value;
+          const field = cell?._cell?.column?.field;
+          elems.alerts.textContent = "Saving Changes..";
+          google.script.run
+          .withSuccessHandler((res)=>{
+            elems.alerts.textContent = "Changes saved..";
+            clearAlert(elems.alerts)
+          })
+          .withFailureHandler((err)=>{
+            elems.alerts.textContent = "Error while processing..";
+            clearAlert(elems.alerts)
+            console.log(err)
+          })
+          .editCell({
+            id:id,
+            value:value,
+            field:field
+          })
+        })
+        }
+
+
+        const searchData=(e)=>{
+          elems.table.setFilter("Name", "like", e.target.value);
+        }
+
+
+
+        const clearAlert=(el)=>{
+          setTimeout(()=>{
+            el.textContent = ""
+          },3000)
+        }
+
+        const addData = ()=>{
+          elems.alerts.textContent = "Processing..";
+          google.script.run
+          .withSuccessHandler((newId)=>{
+            // elems.table.addRow({Id:newId},true)
+            loadData()
+            elems.alerts.textContent = "Successfully added..";
+            clearAlert(elems.alerts)
+          })
+          .withFailureHandler((err)=>{
+            elems.alerts.textContent = "Error while processing..";
+            clearAlert(elems.alerts)
+          })
+          .addRecord();
+        }
+
+    </script>
+</body>
+</html>
